@@ -9,7 +9,7 @@ def client_connect(host, port):
     res = sr1(packet, timeout = 1)
 
     if res is None:
-        print('TODO:\thandle error\n\tCannot reach host {host} on port {port}'.format(host, port))
+        print('TODO:\thandle error\n\tCannot reach host {host} on port {port}'.format(host = host, port = port))
     elif res[TCP].flags == SYNACK:
         print('TODO:\tManage connexion\n\tConnexion success')
     else:
