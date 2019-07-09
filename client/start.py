@@ -1,4 +1,4 @@
-from scapy.all import sr1, IP, TCP
+from scapy.all import send, sr1, IP, TCP
 from shared import constant 
 
 SYNACK = constant.SYN | constant.ACK
@@ -18,5 +18,15 @@ def client_connect(host, port):
         print('TODO:\thandle error\n\tCannot reach host {host} on port {port}'.format(host = host, port = port))
     elif res[TCP].flags == SYNACK:
         print('TODO:\tManage connexion\n\tConnexion success')
+        reply = IP()/TCP()
+
+        reply[TCP].sport    = res[TCP].dport
+        reply[TCP].dport    = res[TCP].sport
+        reply[TCP].seq      = res[TCP].ack + 1
+        reply[TCP].ack      = res[TCP].seq + 1
+        reply[TCP].flags    = 'A'
+        
+        send(reply, iface = 'lo')
+        print('TODO:\tManage send information')
     else:
         print('TODO:\tClose connexion')

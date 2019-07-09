@@ -14,11 +14,10 @@ def start():
         reply[TCP].ack = r[0].seq + 1
         reply[TCP].flags = 'SA'
        
-        reply.show()
-
         answer = sr1(reply, iface = "lo", timeout = 10)
         if answer is None:
             print('TODO:\thandle error\n\tDid not receive the ACK for finish the connexion')
         elif answer[TCP].flags == constant.ACK:
-            print("TODO:\tCheck ack value")
+            print("TODO:\tCheck ack and seq value")
+            print('TODO:\tConnexion established')
 
