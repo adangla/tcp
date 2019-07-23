@@ -40,7 +40,7 @@ def client_connect(host, port):
                 com = IP()/TCP()/Raw(message)
                 com[TCP].sport    = reply[TCP].sport
                 com[TCP].dport    = reply[TCP].dport
-                com[TCP].seq      = reply[TCP].seq  
+                com[TCP].seq      = reply[TCP].seq + 1 
                 com[TCP].ack      = reply[TCP].ack  
                 com[TCP].flags    = 'PA'
                 
