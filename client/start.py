@@ -1,4 +1,4 @@
-from scapy.all import send, sr1, IP, TCP, Raw
+from scapy.all import *
 from shared import constant, colors 
 import random
 
@@ -44,7 +44,13 @@ def client_connect(host, port):
                 com[TCP].ack      = reply[TCP].ack  
                 com[TCP].flags    = 'PA'
                 
-                send(com, iface='lo')
+                ack = sr1(com, iface='lo', timeout=10)
+                if ack is None:
+                    # TODO: Handle error
+                    print('Did not received ack for data')
+                elif ack[TCP].flags == constant.ACK:
+                    print(colors.OKBLUE + '...\tMessage received' + colors.ENDC)
+                    # TODO: Check seq/ack value
         except KeyboardInterrupt:
             # TODO: Close connexion
             print('Close')
