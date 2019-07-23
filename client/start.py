@@ -1,9 +1,12 @@
 from scapy.all import send, sr1, IP, TCP
 from shared import constant 
 
+# TODO: manage iface (interface) for the moment I use lo
+
 SYNACK = constant.SYN | constant.ACK
 
 def client_connect(host, port):
+    print('[*]\tSYN_SENT')
     packet = IP()/TCP()
     
     packet[IP].dst      = host
@@ -18,6 +21,7 @@ def client_connect(host, port):
         print('TODO:\thandle error\n\tCannot reach host {host} on port {port}'.format(host = host, port = port))
     elif res[TCP].flags == SYNACK:
         print('TODO:\tManage connexion\n\tConnexion success')
+        print('[*]\tESTABLISHED')
         reply = IP()/TCP()
 
         reply[TCP].sport    = res[TCP].dport
@@ -28,5 +32,6 @@ def client_connect(host, port):
         
         send(reply, iface = 'lo')
         print('TODO:\tManage send information')
+
     else:
         print('TODO:\tClose connexion')

@@ -5,6 +5,7 @@ from shared import constant
 def start():
     r = sniff(filter="dst port 5555", count=1, iface="lo")
     if r[0][TCP].flags == constant.SYN:
+        print('[*]\tSYN_RCVD')
         print("TODO:\tHandle client connexion")
         reply = IP()/TCP()
        
@@ -18,6 +19,7 @@ def start():
         if answer is None:
             print('TODO:\thandle error\n\tDid not receive the ACK for finish the connexion')
         elif answer[TCP].flags == constant.ACK:
+            print('[*]\tESTABLISHED')
             print("TODO:\tCheck ack and seq value")
             print('TODO:\tConnexion established')
 
