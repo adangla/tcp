@@ -1,6 +1,6 @@
-from scapy.all import send, sr1, IP, TCP
+from scapy.all import send, sr1, IP, TCP, Raw
 from shared import constant, colors 
-
+import random
 
 # TODO: manage iface (interface) for the moment I use lo
 
@@ -13,15 +13,16 @@ def client_connect(host, port):
     packet[IP].dst      = host
     packet[TCP].sport   = 2222
     packet[TCP].dport   = port
-    packet[TCP].seq     = 1000
+    packet[TCP].seq     = random.randint(1, 2048)
     packet[TCP].flags   = 'S'
     
     res = sr1(packet, iface = 'lo', timeout = 10)
 
     if res is None:
-        print('TODO:\thandle error\n\tCannot reach host {host} on port {port}'.format(host = host, port = port))
+        # TODO: handle error
+        print('Cannot reach host {host} on port {port}'.format(host = host, port = port))
     elif res[TCP].flags == SYNACK:
-        print('TODO:\tManage connexion\n\tConnexion success')
+        # TODO: Manage connexion - Connexion success
         print(colors.OKGREEN + '[*]\tESTABLISHED' + colors.ENDC)
         reply = IP()/TCP()
 
@@ -32,7 +33,21 @@ def client_connect(host, port):
         reply[TCP].flags    = 'A'
         
         send(reply, iface = 'lo')
-        print('TODO:\tManage send information')
-
+        # TODO: Manage send information
+        try:
+            while True:
+                message = raw_input('Put the message you want to send: ')
+                com = IP()/TCP()/Raw(message)
+                com[TCP].sport    = reply[TCP].sport
+                com[TCP].dport    = reply[TCP].dport
+                com[TCP].seq      = reply[TCP].seq  
+                com[TCP].ack      = reply[TCP].ack  
+                com[TCP].flags    = 'PA'
+                
+                send(com, iface='lo')
+        except KeyboardInterrupt:
+            # TODO: Close connexion
+            print('Close')
     else:
-        print('TODO:\tClose connexion')
+        # TODO: Close connexion
+        print('Close')
