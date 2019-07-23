@@ -48,9 +48,8 @@ def client_connect(host, port):
                 if ack is None:
                     # TODO: Handle error
                     print('Did not received ack for data')
-                elif ack[TCP].flags == constant.ACK:
+                elif ack[TCP].flags == constant.ACK and ack[TCP].ack == (com[TCP].seq + len(message)):
                     print(colors.OKBLUE + '...\tMessage received' + colors.ENDC)
-                    # TODO: Check seq/ack value
         except KeyboardInterrupt:
             # TODO: Close connexion
             print('Close')
