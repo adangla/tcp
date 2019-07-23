@@ -35,7 +35,8 @@ def start():
                     data = sniff(filter='dst port 5555', count=1, iface="lo", timeout=10)
                     if len(data) <= 0:
                         # TODO: Handle timeout
-                        print('Timeout')
+                        print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
+                        # TODO: Close connexion
                         break
                     if data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:
                         nb_msg += 1
