@@ -1,11 +1,11 @@
 from scapy.all import *
 import random
-from shared import constant
+from shared import constant, colors
 
 def start():
     r = sniff(filter="dst port 5555", count=1, iface="lo")
     if r[0][TCP].flags == constant.SYN:
-        print('[*]\tSYN_RCVD')
+        print(colors.OKGREEN + '[*]\tSYN_RCVD' + colors.ENDC)
         print("TODO:\tHandle client connexion")
         reply = IP()/TCP()
        
@@ -19,7 +19,7 @@ def start():
         if answer is None:
             print('TODO:\thandle error\n\tDid not receive the ACK for finish the connexion')
         elif answer[TCP].flags == constant.ACK:
-            print('[*]\tESTABLISHED')
+            print(colors.OKGREEN + '[*]\tESTABLISHED' + colors.ENDC)
             print("TODO:\tCheck ack and seq value")
             print('TODO:\tConnexion established')
 
