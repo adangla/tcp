@@ -1,4 +1,4 @@
-from client.start import client
+from client.start import Client
 
-c = client()
+c = Client()
 c.connection("127.0.0.1", 5555)

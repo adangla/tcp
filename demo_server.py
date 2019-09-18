@@ -1,3 +1,4 @@
-from server.start import start
+from server.start import Server
 
-start()
+s = Server(5555)
+s.start()

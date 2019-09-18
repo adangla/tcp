@@ -4,7 +4,7 @@ import random
 
 
 # TODO: manage iface (interface) for the moment I use lo
-class client:
+class Client:
     def __init__(self):
         self.state = 'CLOSED'
         pprint.state(self.state)
