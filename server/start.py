@@ -13,7 +13,7 @@ def start():
        
         reply[TCP].sport    = r[0].dport
         reply[TCP].dport    = r[0].sport
-        reply[TCP].seq      = random.randint(1, 2048)
+        reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
         reply[TCP].ack      = r[0].seq + 1
         reply[TCP].flags    = 'SA'
        

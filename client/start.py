@@ -13,7 +13,7 @@ def client_connect(host, port):
     packet[IP].dst      = host
     packet[TCP].sport   = 2222
     packet[TCP].dport   = port
-    packet[TCP].seq     = random.randint(1, 2048)
+    packet[TCP].seq     = random.randint(1, 2048) # TODO: Check RFC
     packet[TCP].flags   = 'S'
     
     res = sr1(packet, iface = 'lo', timeout = 10)
@@ -31,7 +31,7 @@ def client_connect(host, port):
         reply[TCP].seq      = res[TCP].ack + 1
         reply[TCP].ack      = res[TCP].seq + 1
         reply[TCP].flags    = 'A'
-        
+        # TODO: Check seq and ack 
         send(reply, iface = 'lo')
         # TODO: Manage send information
         try:
