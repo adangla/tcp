@@ -5,22 +5,22 @@ import random
 
 # TODO: manage iface (interface) for the moment I use lo
 class client:
-    def __init__(self, host, port):
+    def __init__(self):
         self.state = 'CLOSED'
         pprint.state(self.state)
 
-        self.packet = IP()/TCP()
-        self.packet[IP].dst      = host
-        self.packet[TCP].sport   = 2222
-        self.packet[TCP].dport   = port
-        self.packet[TCP].seq     = random.randint(1, 2048) # TODO: Check RFC
+        self.packet             = IP()/TCP()
+        self.packet[TCP].sport  = 2222
+        self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC
 
-    def connection(self):
+    def connection(self, host, port):
         self.state = 'SYN_SENT'
         pprint.state(self.state)
         
         # Send SYN
-        self.packet[TCP].flags   = 'S'
+        self.packet[IP].dst     = host
+        self.packet[TCP].dport  = port
+        self.packet[TCP].flags  = 'S'
         res = sr1(self.packet, iface='lo', timeout=10)
     
         if res is None:
@@ -64,5 +64,5 @@ class client:
 
 
 def client_connect(host, port):
-    c = client(host, port)
-    c.connection()
+    c = client()
+    c.connection(host, port)
