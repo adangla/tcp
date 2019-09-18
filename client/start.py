@@ -61,8 +61,3 @@ class client:
             # TODO: Close connexion
              print('Close')
 
-
-
-def client_connect(host, port):
-    c = client()
-    c.connection(host, port)
