@@ -56,6 +56,7 @@ class Client:
                     # TODO: Handle error
                      pprint.error('Did not received ack for data')
                 elif ack[TCP].flags == constant.ACK and ack[TCP].ack == (self.packet[TCP].seq + len(message)):
+                    self.packet[TCP].seq = ack[TCP].ack
                     pprint.information('Message received')
         except KeyboardInterrupt:
             # TODO: Close connexion
