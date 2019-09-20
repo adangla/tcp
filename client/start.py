@@ -30,7 +30,7 @@ class Client:
             # TODO: Check ACK value
             
             # Send ACK
-            self.packet[TCP].seq    = res[TCP].ack + 1
+            self.packet[TCP].seq    = res[TCP].ack
             self.packet[TCP].ack    = res[TCP].seq + 1
             self.packet[TCP].flags  = 'A'
             send(self.packet, iface='lo' )
