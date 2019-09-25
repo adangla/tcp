@@ -55,12 +55,14 @@ class Server:
                     break
                 if data and data[0][TCP].flags == constant.FIN:
                     pprint.information('fin received')
-                    data[0][TCP].ack    = data[0][TCP].seq + 1
-                    data[0][TCP].flags  = 'SA'
+                    data[0][TCP].sport  = self.port
+                    data[0][TCP].dport  = data[0][TCP].sport
+                    data[0][TCP].seq    = data[0][TCP].ack+ 1
+                    data[0][TCP].flags  = 'A'
 
                     send(data[0], iface='lo')
                     pprint.information('syn + ack send')
-                    data[0][TCP].ack    = data[0][TCP].seq + 1
+                    data[0][TCP].seq    = data[0][TCP].ack + 1
                     data[0][TCP].flags  = 'F'
                     sr1(data[0], iface='lo', timeout=10)
                     pprint.information('fin send')
