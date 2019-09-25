@@ -55,16 +55,17 @@ class Server:
                     break
                 if data and data[0][TCP].flags == constant.FIN:
                     pprint.information('fin received')
-                    data[0][TCP].sport  = self.port
-                    data[0][TCP].dport  = data[0][TCP].sport
-                    data[0][TCP].seq    = data[0][TCP].ack+ 1
-                    data[0][TCP].flags  = 'A'
+                    data             = IP()/TCP()
+                    data[TCP].sport  = self.port
+                    data[TCP].dport  = data[0][TCP].sport
+                    data[TCP].seq    = data[0][TCP].ack+ 1
+                    data[TCP].flags  = 'A'
 
-                    send(data[0], iface='lo')
+                    send(data, iface='lo')
                     pprint.information('syn + ack send')
-                    data[0][TCP].seq    = data[0][TCP].ack + 1
-                    data[0][TCP].flags  = 'F'
-                    sr1(data[0], iface='lo', timeout=10)
+                    data[TCP].seq    = data[0][TCP].ack + 1
+                    data[TCP].flags  = 'F'
+                    sr1(data, iface='lo', timeout=10)
                     pprint.information('fin send')
                     break
                 elif data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:

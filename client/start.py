@@ -63,15 +63,17 @@ class Client:
             fin = sr1(self.packet, iface='lo', timeout=10)
             if fin is None:
                 pprint.error('Did not received ack for data')
-            elif fin[TCP].flags == constant.ACK:
+            if fin[TCP].flags == constant.ACK:
                 pprint.information('ack and syn received')
                 data = sniff(filter='dst port 2222', count=1, iface="lo", timeout=10)
                 if data and data[0][TCP].flags == constant.FIN:
                     pprint.information('fin received')
-                    data = sniff(filter='dst port 2222', count=1, iface="lo", timeout=10)
-                    data[0][TCP].ack    = data[0][TCP].seq + 1
-                    data[0][TCP].flags  = 'A'
-                    send(data[0], iface='lo')
+                    data             = IP()/TCP()
+                    data[TCP].sport  = self.port
+                    data[TCP].dport  = data[0][TCP].sport
+                    data[TCP].seq    = data[0][TCP].ack + 1
+                    data[TCP].flags  = 'A'
+                    send(data, iface='lo')
             # TODO: Close connexion
             print('Close')
 
