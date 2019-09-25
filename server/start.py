@@ -53,7 +53,19 @@ class Server:
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
                     # TODO: Close connexion
                     break
-                if data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:
+                if data and data[0][TCP].flags == constant.FIN:
+                    pprint.information('fin received')
+                    data[0][TCP].ack    = data[0][TCP].seq + 1
+                    data[0][TCP].flags  = 'SA'
+
+                    send(data[0], iface='lo')
+                    pprint.information('syn + ack send')
+                    data[0][TCP].ack    = data[0][TCP].seq + 1
+                    data[0][TCP].flags  = 'F'
+                    sr1(data[0], iface='lo', timeout=10)
+                    pprint.information('fin send')
+                    break
+                elif data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:
                     nb_msg += 1
                     print(colors.BOLD + colors.WARNING + '[' + str(nb_msg) + ']: ' + data[0][Raw].load + colors.ENDC)
 

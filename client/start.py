@@ -59,6 +59,19 @@ class Client:
                     self.packet[TCP].seq = ack[TCP].ack
                     pprint.information('Message received')
         except KeyboardInterrupt:
+            self.packet[TCP].flags  = 'F'
+            fin = sr1(self.packet, iface='lo', timeout=10)
+            if len(ack) <= 0:
+                pprint.error('Did not received ack for data')
+            elif ack[TCP].flags == constant.ACK | constant.SYN:
+                pprint.information('ack and syn received')
+                data = sniff(filter='dst port 2222', count=1, iface="lo", timeout=10)
+                if data and data[0][TCP].flags == constant.FIN:
+                    pprint.information('fin received')
+                    data = sniff(filter='dst port 2222', count=1, iface="lo", timeout=10)
+                    data[0][TCP].ack    = data[0][TCP].seq + 1
+                    data[0][TCP].flags  = 'A'
+                    send(data[0], iface='lo')
             # TODO: Close connexion
-             print('Close')
+            print('Close')
 
