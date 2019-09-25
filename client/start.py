@@ -1,6 +1,6 @@
 from scapy.all import *
 from shared import constant, colors, pprint
-import random
+import random, time
 
 
 # TODO: manage iface (interface) for the moment I use lo
@@ -60,20 +60,20 @@ class Client:
                     pprint.information('Message received')
         except KeyboardInterrupt:
             self.packet[TCP].flags  = 'F'
-            fin = sr1(self.packet, iface='lo', timeout=10)
-            if fin is None:
-                pprint.error('Did not received ack for data')
-            if fin[TCP].flags == constant.ACK:
-                pprint.information('ack and syn received')
-                data = sniff(filter='dst port 2222', count=1, iface="lo", timeout=10)
-                if data and data[0][TCP].flags == constant.FIN:
-                    pprint.information('fin received')
-                    data             = IP()/TCP()
-                    data[TCP].sport  = self.port
-                    data[TCP].dport  = data[0][TCP].sport
-                    data[TCP].seq    = data[0][TCP].ack + 1
-                    data[TCP].flags  = 'A'
-                    send(data, iface='lo')
+            fin = send(self.packet, iface='lo')
+#            if fin is None:
+#                pprint.error('Did not received ack for data')
+#            if fin[TCP].flags == constant.ACK:
+#                pprint.information('ack and syn received')
+            data = sniff(count=2, iface="lo", timeout=10)
+            data.summary()
+#            if data and data[1][TCP].flags == constant.FIN:
+            pprint.information('fin received')
+            self.packet[TCP].seq    = data[1][TCP].ack
+            self.packet[TCP].ack    = data[1][TCP].seq + 1
+            self.packet[TCP].flags  = 'A'
+            time.sleep(2)
+            send(self.packet, iface='lo')
             # TODO: Close connexion
             print('Close')
 
