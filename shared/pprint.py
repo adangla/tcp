@@ -1,4 +1,4 @@
-import colors
+from shared import colors
 
 def state(current_state):
     print(colors.OKGREEN + '[*]\t' + current_state + colors.ENDC)

@@ -13,6 +13,13 @@ class Client:
         self.packet[TCP].sport  = 2222
         self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC
 
+    def send_syn(self, host, port):
+        self.packet[IP].dst     = host
+        self.packet[TCP].dport  = port
+        self.packet[TCP].flags  = 'S'
+        res = sr1(self.packet, iface='lo', timeout=10)
+        return res
+        
     def connection(self, host, port):
         self.state = 'SYN_SENT'
         pprint.state(self.state)
@@ -22,7 +29,7 @@ class Client:
         self.packet[TCP].dport  = port
         self.packet[TCP].flags  = 'S'
         res = sr1(self.packet, iface='lo', timeout=10)
-    
+        
         if res is None:
             # TODO: handle error
             pprint.error('Cannot reach host {host} on port {port}'.format(host = self.packet[IP].dst, port = self.packet[TCP].dport))
@@ -61,4 +68,3 @@ class Client:
         except KeyboardInterrupt:
             # TODO: Close connexion
              print('Close')
-
