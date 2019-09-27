@@ -59,21 +59,17 @@ class Client:
                     self.packet[TCP].seq = ack[TCP].ack
                     pprint.information('Message received')
         except KeyboardInterrupt:
-            self.packet[TCP].flags  = 'F'
-            fin = send(self.packet, iface='lo')
-#            if fin is None:
-#                pprint.error('Did not received ack for data')
-#            if fin[TCP].flags == constant.ACK:
-#                pprint.information('ack and syn received')
-            data = sniff(count=2, iface="lo", timeout=10)
-            data.summary()
-#            if data and data[1][TCP].flags == constant.FIN:
-            pprint.information('fin received')
-            self.packet[TCP].seq    = data[1][TCP].ack
-            self.packet[TCP].ack    = data[1][TCP].seq + 1
-            self.packet[TCP].flags  = 'A'
-            time.sleep(2)
-            send(self.packet, iface='lo')
+            self.deconnection()
             # TODO: Close connexion
             print('Close')
 
+    def deconnection(self):
+        self.packet[TCP].flags  = 'F'
+        fin = send(self.packet, iface='lo')
+        pprint.information('fin received')
+        data = sniff(count=2, iface="lo", timeout=10)
+        self.packet[TCP].seq    = data[1][TCP].ack
+        self.packet[TCP].ack    = data[1][TCP].seq + 1
+        self.packet[TCP].flags  = 'A'
+        time.sleep(2)
+        send(self.packet, iface='lo')

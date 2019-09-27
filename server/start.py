@@ -54,19 +54,7 @@ class Server:
                     # TODO: Close connexion
                     break
                 if data and data[0][TCP].flags == constant.FIN:
-                    pprint.information('fin received')
-                    datafin             = IP()/TCP()
-                    datafin[TCP].sport  = self.port
-                    datafin[TCP].dport  = data[0][TCP].sport
-                    datafin[TCP].seq    = data[0][TCP].ack
-                    datafin[TCP].ack    = data[0][TCP].seq +1 
-                    datafin[TCP].flags  = 'A'
-
-                    send(datafin, iface='lo')
-                    pprint.information('synack send')
-                    datafin[TCP].flags  = 'F'
-                    _=sr1(datafin, iface='lo', timeout=10)
-                    pprint.information('fin send')
+                    self.deconnection(data)
                     break
                 elif data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:
                     nb_msg += 1
@@ -84,4 +72,17 @@ class Server:
         except KeyboardInterrupt:
             print('Total number of message receive: ' + str(nb_msg))
               # TODO: Close connexion
+    def deconnection(self, data):
+        pprint.information('fin received')
+        datafin             = IP()/TCP()
+        datafin[TCP].sport  = self.port
+        datafin[TCP].dport  = data[0][TCP].sport
+        datafin[TCP].seq    = data[0][TCP].ack
+        datafin[TCP].ack    = data[0][TCP].seq +1 
+        datafin[TCP].flags  = 'A'
 
+        send(datafin, iface='lo')
+        pprint.information('synack send')
+        datafin[TCP].flags  = 'F'
+        _=sr1(datafin, iface='lo', timeout=10)
+        pprint.information('fin send')
