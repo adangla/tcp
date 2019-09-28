@@ -63,11 +63,11 @@ class Server:
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
                     # TODO: Close connexion
                     break
-                if self.getFin(data):
+                if self.isFin(data):
                     self.sendACK(data[0], data[0][TCP].seq + 1)
                     self.deconnection(data)
                     break
-                elif self.checkData(data):
+                elif self.containsMessage(data):
                     nb_msg += 1
                     print(colors.BOLD + colors.WARNING + '[' + str(nb_msg) + ']: ' + data[0][Raw].load + colors.ENDC)
 
@@ -78,13 +78,13 @@ class Server:
            print('Total number of message receive: ' + str(nb_msg))
               # TODO: Close connexion
 
-    def getFin(self, data):
+    def isFin(self, data):
         return (data and data[0][TCP].flags == constant.FIN)
 
-    def checkAck(self, data):
+    def isAck(self, data):
         return (data and data[0][TCP].flags == constant.ACK)
 
-    def checkData(self, data):
+    def containsMessage(self, data):
         return (data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK)
 
     def deconnection(self, data):
@@ -100,7 +100,7 @@ class Server:
         fin_pkt[TCP].flags  = 'F'
 
         ackreceived = sr1(fin_pkt, iface='lo', timeout=10)
-        if self.checkAck(ackreceived):
+        if self.isAck(ackreceived):
             self.state = 'LAST_ACK'
             pprint.state(self.state)
         else:
