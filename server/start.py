@@ -56,7 +56,7 @@ class Server:
                 if self.getFin(data):
                     self.deconnection(data)
                     break
-                elif self.getData(data):
+                elif self.checkData(data):
                     nb_msg += 1
                     print(colors.BOLD + colors.WARNING + '[' + str(nb_msg) + ']: ' + data[0][Raw].load + colors.ENDC)
 
@@ -76,10 +76,10 @@ class Server:
     def getFin(self, data):
         return (data and data[0][TCP].flags == constant.FIN)
 
-    def getAck(self, data):
+    def checkAck(self, data):
         return (data and data[0][TCP].flags == constant.ACK)
 
-    def getData(self, data):
+    def checkData(self, data):
         return (data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK)
 
     def deconnection(self, data):
@@ -95,8 +95,10 @@ class Server:
         send(datafin, iface='lo')
         datafin[TCP].flags  = 'F'
         ackreceived = sr1(datafin, iface='lo', timeout=10)
-        if self.getAck(ackreceived):
+        if self.checkAck(ackreceived):
             self.state = 'LAST_ACK'
             pprint.state(self.state)
         else:
             print('Did not receive the ACK for finish the deconnection')
+        self.state = 'CLOSED'
+        pprint.state(self.state)

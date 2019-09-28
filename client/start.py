@@ -56,7 +56,7 @@ class Client:
                 if len(ack) <= 0:
                     # TODO: Handle error
                      pprint.error('Did not received ack for data')
-                elif ack[TCP].flags == constant.ACK and ack[TCP].ack == (self.packet[TCP].seq + len(message)):
+                elif self.checkAck(ack, message):
                     self.packet[TCP].seq = ack[TCP].ack
                     pprint.information('Message received')
         except KeyboardInterrupt:
@@ -64,12 +64,22 @@ class Client:
             self.state = 'CLOSED'
             pprint.state(self.state)
 
+    def checkAck(self, ack, message):
+        return(ack[TCP].flags == constant.ACK and ack[TCP].ack == (self.packet[TCP].seq + len(message)))
+
+
     def deconnection(self):
         self.packet[TCP].flags  = 'F'
         fin = send(self.packet, iface='lo')
+        self.state = 'FIN_WAIT_1'
+        pprint.state(self.state)
+        self.state = 'FIN_WAIT_2'
+        pprint.state(self.state)
         data = sniff(count=2, iface="lo", timeout=10)
         self.packet[TCP].seq    = data[1][TCP].ack
         self.packet[TCP].ack    = data[1][TCP].seq + 1
         self.packet[TCP].flags  = 'A'
         time.sleep(2)
         send(self.packet, iface='lo')
+        pprint.state(self.state)
+        self.state = 'TIME_WAIT'
