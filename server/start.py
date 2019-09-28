@@ -53,10 +53,10 @@ class Server:
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
                     # TODO: Close connexion
                     break
-                if data and data[0][TCP].flags == constant.FIN:
+                if self.getFin(data):
                     self.deconnection(data)
                     break
-                elif data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK:
+                elif self.getData(data):
                     nb_msg += 1
                     print(colors.BOLD + colors.WARNING + '[' + str(nb_msg) + ']: ' + data[0][Raw].load + colors.ENDC)
 
@@ -72,8 +72,19 @@ class Server:
         except KeyboardInterrupt:
             print('Total number of message receive: ' + str(nb_msg))
               # TODO: Close connexion
+
+    def getFin(self, data):
+        return (data and data[0][TCP].flags == constant.FIN)
+
+    def getAck(self, data):
+        return (data and data[0][TCP].flags == constant.ACK)
+
+    def getData(self, data):
+        return (data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK)
+
     def deconnection(self, data):
-        pprint.information('fin received')
+        self.state = 'CLOSE_WAIT'
+        pprint.state(self.state)
         datafin             = IP()/TCP()
         datafin[TCP].sport  = self.port
         datafin[TCP].dport  = data[0][TCP].sport
@@ -82,7 +93,10 @@ class Server:
         datafin[TCP].flags  = 'A'
 
         send(datafin, iface='lo')
-        pprint.information('synack send')
         datafin[TCP].flags  = 'F'
-        _=sr1(datafin, iface='lo', timeout=10)
-        pprint.information('fin send')
+        ackreceived = sr1(datafin, iface='lo', timeout=10)
+        if self.getAck(ackreceived):
+            self.state = 'LAST_ACK'
+            pprint.state(self.state)
+        else:
+            print('Did not receive the ACK for finish the deconnection')

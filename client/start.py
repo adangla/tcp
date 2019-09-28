@@ -39,8 +39,9 @@ class Client:
             self.communication()
 
         else:
-            # TODO: Deconnection
-            print('Close')
+            self.deconnection()
+            self.state = 'CLOSED'
+            pprint.state(self.state)
 
 
     def communication(self):
@@ -60,13 +61,12 @@ class Client:
                     pprint.information('Message received')
         except KeyboardInterrupt:
             self.deconnection()
-            # TODO: Close connexion
-            print('Close')
+            self.state = 'CLOSED'
+            pprint.state(self.state)
 
     def deconnection(self):
         self.packet[TCP].flags  = 'F'
         fin = send(self.packet, iface='lo')
-        pprint.information('fin received')
         data = sniff(count=2, iface="lo", timeout=10)
         self.packet[TCP].seq    = data[1][TCP].ack
         self.packet[TCP].ack    = data[1][TCP].seq + 1
