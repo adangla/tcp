@@ -17,6 +17,16 @@ class Server:
         if r[0][TCP].flags == constant.SYN:
             self.connection(r)
 
+    def sendACK(self, data, ack):
+        ackdata             = IP()/TCP()
+        ackdata[TCP].sport  = self.port
+        ackdata[TCP].dport  = data[TCP].sport
+        ackdata[TCP].seq    = data[TCP].ack
+        ackdata[TCP].ack    = ack
+        ackdata[TCP].flags  = 'A'
+
+        send(ackdata, iface='lo')
+
     def connection(self, request):
         self.state = 'SYN_RCVD'
         pprint.state(self.state)
@@ -54,6 +64,7 @@ class Server:
                     # TODO: Close connexion
                     break
                 if self.getFin(data):
+                    self.sendACK(data[0], data[0][TCP].seq + 1)
                     self.deconnection(data)
                     break
                 elif self.checkData(data):
@@ -61,16 +72,10 @@ class Server:
                     print(colors.BOLD + colors.WARNING + '[' + str(nb_msg) + ']: ' + data[0][Raw].load + colors.ENDC)
 
                     # Send ACK
-                    ackdata             = IP()/TCP()
-                    ackdata[TCP].sport  = self.port
-                    ackdata[TCP].dport  = data[0][TCP].sport
-                    ackdata[TCP].seq    = data[0][TCP].ack
-                    ackdata[TCP].ack    = data[0][TCP].seq + len(data[0][Raw].load)
-                    ackdata[TCP].flags  = 'A'
-
-                    send(ackdata, iface='lo')
+                    ackvalue = data[0][TCP].seq + len(data[0][Raw].load)
+                    self.sendACK(data[0], ackvalue)
         except KeyboardInterrupt:
-            print('Total number of message receive: ' + str(nb_msg))
+           print('Total number of message receive: ' + str(nb_msg))
               # TODO: Close connexion
 
     def getFin(self, data):
@@ -85,20 +90,20 @@ class Server:
     def deconnection(self, data):
         self.state = 'CLOSE_WAIT'
         pprint.state(self.state)
-        datafin             = IP()/TCP()
-        datafin[TCP].sport  = self.port
-        datafin[TCP].dport  = data[0][TCP].sport
-        datafin[TCP].seq    = data[0][TCP].ack
-        datafin[TCP].ack    = data[0][TCP].seq +1 
-        datafin[TCP].flags  = 'A'
 
-        send(datafin, iface='lo')
-        datafin[TCP].flags  = 'F'
-        ackreceived = sr1(datafin, iface='lo', timeout=10)
+       
+        fin_pkt             = IP()/TCP()
+        fin_pkt[TCP].sport  = self.port
+        fin_pkt[TCP].dport  = data[0][TCP].sport
+        fin_pkt[TCP].seq    = data[0][TCP].ack
+        fin_pkt[TCP].ack    = data[0][TCP].seq + 1
+        fin_pkt[TCP].flags  = 'F'
+
+        ackreceived = sr1(fin_pkt, iface='lo', timeout=10)
         if self.checkAck(ackreceived):
             self.state = 'LAST_ACK'
             pprint.state(self.state)
         else:
-            print('Did not receive the ACK for finish the deconnection')
+            pprint.error('Did not receive the ACK for finish the deconnection')
         self.state = 'CLOSED'
         pprint.state(self.state)
