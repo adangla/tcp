@@ -4,16 +4,18 @@ from shared import constant, colors, pprint
 
 # TODO: Change IP SRC/DST currently -> use default location 127... (lo)
 class Server:
-    def __init__(self, port):
+    def __init__(self, port, iface):
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
+        conf.iface = 'lo'
 
     def start(self):
         self.state = 'LISTEN'
         pprint.state(self.state)
 
-        r = sniff(filter="dst port " + str(self.port), count=1, iface="lo")
+        filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
+        r = sniff(filter=filter_options, count=1)
         if r[0][TCP].flags == constant.SYN:
             self.connection(r)
 
@@ -25,7 +27,7 @@ class Server:
         ackdata[TCP].ack    = ack
         ackdata[TCP].flags  = 'A'
 
-        send(ackdata, iface='lo')
+        send(ackdata)
 
     def connection(self, request):
         self.state = 'SYN_RCVD'
@@ -38,7 +40,7 @@ class Server:
         reply[TCP].ack      = request[0].seq + 1
         reply[TCP].flags    = 'SA'
 
-        answer = sr1(reply, iface = "lo", timeout = 10)
+        answer = sr1(reply, timeout = 10)
         if answer is None:
             # TODO: handle error 
             print('Did not receive the ACK for finish the connexion')
@@ -57,8 +59,8 @@ class Server:
                 data = None
                 # TODO: Check ack/seq and flags and reply a ACK
                 # TODO: Create conf file with timeout option
-                data = sniff(filter='dst port 5555', count=1, iface="lo", timeout=10)
-                if len(data) <= 0:
+                data = sniff(filter='tcp and dst port ' + str(self.port), count=1)
+                if data and len(data) <= 0:
                     # TODO: Handle timeout
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
                     # TODO: Close connexion
@@ -99,7 +101,7 @@ class Server:
         fin_pkt[TCP].ack    = data[0][TCP].seq + 1
         fin_pkt[TCP].flags  = 'F'
 
-        ackreceived = sr1(fin_pkt, iface='lo', timeout=10)
+        ackreceived = sr1(fin_pkt, timeout=10)
         if self.isAck(ackreceived):
             self.state = 'LAST_ACK'
             pprint.state(self.state)
