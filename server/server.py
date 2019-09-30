@@ -1,23 +1,26 @@
 from scapy.all import *
+import threading
+import netifaces
 import random
 from shared import constant, colors, pprint
 
 # TODO: Change IP SRC/DST currently -> use default location 127... (lo)
-class Server:
-    def __init__(self, port, iface):
+class Server(threading.Thread):
+    def __init__(self, port):
+        threading.Thread.__init__(self)
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
-        conf.iface = 'lo'
 
-    def start(self):
+    def run(self):
         self.state = 'LISTEN'
         pprint.state(self.state)
 
         filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
-        r = sniff(filter=filter_options, count=1)
-        if r[0][TCP].flags == constant.SYN:
-            self.connection(r)
+        for iface in netifaces.interfaces():
+            r = sniff(filter=filter_options, count=1, iface=iface, timeout=10)
+            if r is not None and len(r) > 0:
+                self.connection(r, iface)
 
     def sendACK(self, data, ack):
         ackdata             = IP()/TCP()
@@ -29,7 +32,8 @@ class Server:
 
         send(ackdata)
 
-    def connection(self, request):
+    def connection(self, request, iface):
+        conf.iface = iface
         self.state = 'SYN_RCVD'
         pprint.state(self.state)
 
