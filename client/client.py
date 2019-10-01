@@ -1,14 +1,14 @@
 from scapy.all import *
 from shared import constant, colors, pprint
 import random, time
-
+import os
 
 # TODO: manage iface (interface) for the moment I use lo
 class Client:
     def __init__(self):
         self.state = 'CLOSED'
         pprint.state(self.state)
-
+        os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP')
         self.packet             = IP()/TCP()
         self.packet[TCP].sport  = 2222
         self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC

@@ -14,21 +14,21 @@ class Server(threading.Thread):
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
-        #os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -s 192.168.1.20 -j DROP')
+        os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP')
+    
     def run(self):
         self.state = 'LISTEN'
         pprint.state(self.state)
 
         filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
         for iface in netifaces.interfaces():
-            os.system('iptables -A OUTPUT -p tcp --dport ' + str(self.port) + ' -j ACCEPT')
-            os.system('iptables -A INPUT -p tcp -i ' + iface + ' --dport ' + str(self.port) + ' -j ACCEPT')
+            pprint.information('sniffing on ' + iface)
             r = sniff(filter=filter_options, prn=self.connection(iface), count=1, iface=iface, timeout=10)
-#            if r is not None and len(r) > 0:
-#                self.connection(r, iface)
 
     def sendACK(self, data, ack):
         ackdata             = IP()/TCP()
+        ackdata[IP].src     = data[IP].dst
+        ackdata[IP].dst     = data[IP].src
         ackdata[TCP].sport  = self.port
         ackdata[TCP].dport  = data[TCP].sport
         ackdata[TCP].seq    = data[TCP].ack
@@ -42,18 +42,20 @@ class Server(threading.Thread):
             conf.iface = iface
             self.state = 'SYN_RCVD'
             pprint.state(self.state)
-        
+            
             reply               = IP()/TCP()
+            reply[IP].src       = request[IP].dst
+            reply[IP].dst       = request[IP].src
             reply[TCP].sport    = self.port
             reply[TCP].dport    = request[0].sport
             reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
             reply[TCP].ack      = request[0].seq + 1
             reply[TCP].flags    = 'SA'
-
-            answer = sr1(reply, timeout = 10)
+            
+            answer = sr1(reply, retry=5, timeout = 10)
             if answer is None:
                 # TODO: handle error 
-                print('Did not receive the ACK for finish the connexion')
+                pprint.error('Did not receive the ACK for finish the connexion')
             elif answer[TCP].flags == constant.ACK:
                 self.communication() 
        return connection_packet
@@ -106,6 +108,8 @@ class Server(threading.Thread):
 
        
         fin_pkt             = IP()/TCP()
+        fin_pkt[IP].src     = data[0][IP].dst
+        fin_pkt[IP].dst     = data[0][IP].src
         fin_pkt[TCP].sport  = self.port
         fin_pkt[TCP].dport  = data[0][TCP].sport
         fin_pkt[TCP].seq    = data[0][TCP].ack
