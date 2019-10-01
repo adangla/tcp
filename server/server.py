@@ -18,9 +18,9 @@ class Server(threading.Thread):
 
         filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
         for iface in netifaces.interfaces():
-            r = sniff(filter=filter_options, count=1, iface=iface, timeout=10)
-            if r is not None and len(r) > 0:
-                self.connection(r, iface)
+            r = sniff(filter=filter_options, prn=self.connection(iface), count=1, iface=iface, timeout=10)
+#            if r is not None and len(r) > 0:
+#                self.connection(r, iface)
 
     def sendACK(self, data, ack):
         ackdata             = IP()/TCP()
@@ -32,24 +32,26 @@ class Server(threading.Thread):
 
         send(ackdata)
 
-    def connection(self, request, iface):
-        conf.iface = iface
-        self.state = 'SYN_RCVD'
-        pprint.state(self.state)
+    def connection(self, iface):
+       def connection_packet(request):
+            conf.iface = iface
+            self.state = 'SYN_RCVD'
+            pprint.state(self.state)
+        
+            reply               = IP()/TCP()
+            reply[TCP].sport    = self.port
+            reply[TCP].dport    = request[0].sport
+            reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
+            reply[TCP].ack      = request[0].seq + 1
+            reply[TCP].flags    = 'SA'
 
-        reply               = IP()/TCP()
-        reply[TCP].sport    = self.port
-        reply[TCP].dport    = request[0].sport
-        reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
-        reply[TCP].ack      = request[0].seq + 1
-        reply[TCP].flags    = 'SA'
-
-        answer = sr1(reply, timeout = 10)
-        if answer is None:
-            # TODO: handle error 
-            print('Did not receive the ACK for finish the connexion')
-        elif answer[TCP].flags == constant.ACK:
-            self.communication()
+            answer = sr1(reply, timeout = 10)
+            if answer is None:
+                # TODO: handle error 
+                print('Did not receive the ACK for finish the connexion')
+            elif answer[TCP].flags == constant.ACK:
+                self.communication() 
+       return connection_packet
 
     def communication(self):
         self.state = 'ESTABLISHED'
