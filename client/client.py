@@ -27,8 +27,7 @@ class Client:
             # TODO: handle error
             pprint.error('Cannot reach host {host} on port {port}'.format(host = self.packet[IP].dst, port = self.packet[TCP].dport))
         elif res[TCP].flags == constant.SYN | constant.ACK:
-            # TODO: Check ACK value
-            
+            self.checkAckValue(self.packet[TCP].seq + 1, res[TCP].ack)
             # Send ACK
             self.packet[TCP].seq    = res[TCP].ack
             self.packet[TCP].ack    = res[TCP].seq + 1
@@ -57,6 +56,7 @@ class Client:
                     # TODO: Handle error
                      pprint.error('Did not received ack for data')
                 elif self.checkAck(ack, message):
+                    self.checkAckValue(ack[TCP].ack, self.packet[TCP].seq + len(message))
                     self.packet[TCP].seq = ack[TCP].ack
                     pprint.information('Message received')
         except KeyboardInterrupt:
@@ -66,6 +66,12 @@ class Client:
 
     def checkAck(self, ack, message):
         return(ack[TCP].flags == constant.ACK and ack[TCP].ack == (self.packet[TCP].seq + len(message)))
+
+    def checkAckValue(self, ack_number, ack_expected):
+        if (ack_number != ack_expected):
+            pprint.error('This frame is suspicious : bad ACK number received')
+            exit()
+        return
 
 
     def deconnection(self):

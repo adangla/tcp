@@ -87,6 +87,12 @@ class Server:
     def containsMessage(self, data):
         return (data and Raw in data[0] and data[0][TCP].flags == constant.PSH | constant.ACK)
 
+    def checkAckValue(self, ack_number, ack_expected):
+        if (ack_number != ack_expected):
+            pprint.error('This frame is suspicious : bad ACK number received')
+            exit()
+        return
+
     def deconnection(self, data):
         self.state = 'CLOSE_WAIT'
         pprint.state(self.state)
@@ -101,6 +107,7 @@ class Server:
 
         ackreceived = sr1(fin_pkt, iface='lo', timeout=10)
         if self.isAck(ackreceived):
+            self.checkAckValue(ackreceived[TCP].ack, fin_pkt[TCP].seq + 1)
             self.state = 'LAST_ACK'
             pprint.state(self.state)
         else:
