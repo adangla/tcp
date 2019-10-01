@@ -1,7 +1,10 @@
-from scapy.all import *
-import threading
 import netifaces
+import os
 import random
+import threading
+
+from scapy.all import *
+
 from shared import constant, colors, pprint
 
 # TODO: Change IP SRC/DST currently -> use default location 127... (lo)
@@ -11,6 +14,7 @@ class Server(threading.Thread):
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
+        os.system('iptables -t raw -A PREROUTING -p tcp --dport ' + str(self.port) + ' -j DROP')
 
     def run(self):
         self.state = 'LISTEN'
