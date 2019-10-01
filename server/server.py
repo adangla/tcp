@@ -21,6 +21,7 @@ class Server(threading.Thread):
 
         filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
         for iface in netifaces.interfaces():
+            os.system('iptables -A OUTPUT -p tcp --dport ' + str(self.port) + ' -j ACCEPT')
             os.system('iptables -A INPUT -p tcp -i ' + iface + ' --dport ' + str(self.port) + ' -j ACCEPT')
             r = sniff(filter=filter_options, prn=self.connection(iface), count=1, iface=iface, timeout=10)
 #            if r is not None and len(r) > 0:
