@@ -14,14 +14,14 @@ class Server(threading.Thread):
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
-        os.system('iptables -t raw -A PREROUTING -p tcp --dport ' + str(self.port) + ' -j DROP')
-
+        #os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -s 192.168.1.20 -j DROP')
     def run(self):
         self.state = 'LISTEN'
         pprint.state(self.state)
 
         filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
         for iface in netifaces.interfaces():
+            os.system('iptables -A INPUT -p tcp -i ' + iface + ' --dport ' + str(self.port) + ' -j ACCEPT')
             r = sniff(filter=filter_options, prn=self.connection(iface), count=1, iface=iface, timeout=10)
 #            if r is not None and len(r) > 0:
 #                self.connection(r, iface)
