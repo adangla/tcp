@@ -1,49 +1,64 @@
-from scapy.all import *
+import netifaces
+import os
 import random
+import threading
+
+from scapy.all import *
+
 from shared import constant, colors, pprint
 
 # TODO: Change IP SRC/DST currently -> use default location 127... (lo)
-class Server:
+class Server(threading.Thread):
     def __init__(self, port):
+        threading.Thread.__init__(self)
         self.state = 'CLOSED'
         pprint.state(self.state)
         self.port = port
-
-    def start(self):
+        os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP')
+    
+    def run(self):
         self.state = 'LISTEN'
         pprint.state(self.state)
 
-        r = sniff(filter="dst port " + str(self.port), count=1, iface="lo")
-        if r[0][TCP].flags == constant.SYN:
-            self.connection(r)
+        filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
+        for iface in netifaces.interfaces():
+            pprint.information('sniffing on ' + iface)
+            r = sniff(filter=filter_options, prn=self.connection(iface), count=1, iface=iface, timeout=10)
 
     def sendACK(self, data, ack):
         ackdata             = IP()/TCP()
+        ackdata[IP].src     = data[IP].dst
+        ackdata[IP].dst     = data[IP].src
         ackdata[TCP].sport  = self.port
         ackdata[TCP].dport  = data[TCP].sport
         ackdata[TCP].seq    = data[TCP].ack
         ackdata[TCP].ack    = ack
         ackdata[TCP].flags  = 'A'
 
-        send(ackdata, iface='lo')
+        send(ackdata)
 
-    def connection(self, request):
-        self.state = 'SYN_RCVD'
-        pprint.state(self.state)
-
-        reply               = IP()/TCP()
-        reply[TCP].sport    = self.port
-        reply[TCP].dport    = request[0].sport
-        reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
-        reply[TCP].ack      = request[0].seq + 1
-        reply[TCP].flags    = 'SA'
-
-        answer = sr1(reply, iface = "lo", timeout = 10)
-        if answer is None:
-            # TODO: handle error 
-            print('Did not receive the ACK for finish the connexion')
-        elif answer[TCP].flags == constant.ACK:
-            self.communication()
+    def connection(self, iface):
+       def connection_packet(request):
+            conf.iface = iface
+            self.state = 'SYN_RCVD'
+            pprint.state(self.state)
+            
+            reply               = IP()/TCP()
+            reply[IP].src       = request[IP].dst
+            reply[IP].dst       = request[IP].src
+            reply[TCP].sport    = self.port
+            reply[TCP].dport    = request[0].sport
+            reply[TCP].seq      = random.randint(1, 2048) # TODO: Check RFC
+            reply[TCP].ack      = request[0].seq + 1
+            reply[TCP].flags    = 'SA'
+            
+            answer = sr1(reply, retry=5, timeout = 10)
+            if answer is None:
+                # TODO: handle error 
+                pprint.error('Did not receive the ACK for finish the connexion')
+            elif answer[TCP].flags == constant.ACK:
+                self.communication() 
+       return connection_packet
 
     def communication(self):
         self.state = 'ESTABLISHED'
@@ -57,8 +72,8 @@ class Server:
                 data = None
                 # TODO: Check ack/seq and flags and reply a ACK
                 # TODO: Create conf file with timeout option
-                data = sniff(filter='dst port 5555', count=1, iface="lo", timeout=10)
-                if len(data) <= 0:
+                data = sniff(filter='tcp and dst port ' + str(self.port), count=1)
+                if data and len(data) <= 0:
                     # TODO: Handle timeout
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
                     # TODO: Close connexion
@@ -99,13 +114,15 @@ class Server:
 
        
         fin_pkt             = IP()/TCP()
+        fin_pkt[IP].src     = data[0][IP].dst
+        fin_pkt[IP].dst     = data[0][IP].src
         fin_pkt[TCP].sport  = self.port
         fin_pkt[TCP].dport  = data[0][TCP].sport
         fin_pkt[TCP].seq    = data[0][TCP].ack
         fin_pkt[TCP].ack    = data[0][TCP].seq + 1
         fin_pkt[TCP].flags  = 'F'
 
-        ackreceived = sr1(fin_pkt, iface='lo', timeout=10)
+        ackreceived = sr1(fin_pkt, timeout=10)
         if self.isAck(ackreceived):
             self.checkAckValue(ackreceived[TCP].ack, fin_pkt[TCP].seq + 1)
             self.state = 'LAST_ACK'
