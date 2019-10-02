@@ -10,7 +10,7 @@ class Client:
         pprint.state(self.state)
         os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP')
         self.packet             = IP()/TCP()
-        self.packet[TCP].sport  = 4444
+        self.packet[TCP].sport  = random.randint(1025, 65000)
         self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC
 
     def connection(self, host, port, iface):
