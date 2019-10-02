@@ -77,16 +77,22 @@ class Client:
 
     def deconnection(self):
         self.packet[TCP].flags  = 'F'
-        fin = send(self.packet)
         self.state = 'FIN_WAIT_1'
         pprint.state(self.state)
-        self.state = 'FIN_WAIT_2'
-        pprint.state(self.state)
-        data = sniff(count=2, timeout=10)
-        self.packet[TCP].seq    = data[1][TCP].ack
-        self.packet[TCP].ack    = data[1][TCP].seq + 1
+        
+        fin_ack = sr1(self.packet)
+
+        if fin_ack[TCP].flags == constant.ACK:
+            filter_opt = 'tcp and dst port ' + str(self.packet[TCP].sport)
+            data = sniff(filter=filter_opt, count=1, timeout=10)
+            self.packet[TCP].seq    = data[0][TCP].ack
+            self.packet[TCP].ack    = data[0][TCP].seq + 1
+        elif fin_ack[TCP].flags == constant.FIN:
+            self.packet[TCP].seq    = fin_ack[TCP].ack
+            self.packet[TCP].ack    = fin_ack[TCP].seq + 1
+        
         self.packet[TCP].flags  = 'A'
-        time.sleep(2)
         send(self.packet)
+        self.state = 'FIN_WAIT_2'
         pprint.state(self.state)
         self.state = 'TIME_WAIT'
