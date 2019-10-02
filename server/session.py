@@ -6,7 +6,7 @@ from shared import constant, colors, pprint
 class Session:
     def __init__(self, iface, request):
         self.state  = ''
-        conf.iface  = iface
+        self.iface  = iface
         self.port   = request[TCP].dport
         
         self.packet             = IP()/TCP()
@@ -16,6 +16,9 @@ class Session:
         self.packet[TCP].dport  = request[TCP].sport
         self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC
 
+    def getInterface(self):
+        return self.iface
+
     def getState(self):
         return self.state
 
@@ -24,7 +27,7 @@ class Session:
         self.packet[TCP].ack    = ack
         self.packet[TCP].flags  = 'A'
 
-        send(self.packet)
+        send(self.packet, iface=self.iface)
 
     def connection(self, request):
         self.state = 'SYN_RCVD'
@@ -33,7 +36,7 @@ class Session:
         self.packet[TCP].ack      = request[0].seq + 1
         self.packet[TCP].flags    = 'SA'
     
-        answer = sr1(self.packet, retry=5, timeout = 10)
+        answer = sr1(self.packet, iface=self.iface, retry=5, timeout = 10)
         if answer is None:
             # TODO: handle error 
             pprint.error('Did not receive the ACK for finish the connexion')
@@ -51,7 +54,7 @@ class Session:
             while True:
                 data = None
                 # TODO: Check ack/seq and flags and reply a ACK
-                data = sniff(filter='tcp and dst port ' + str(self.port), count=1)
+                data = sniff(filter='tcp and dst port ' + str(self.port), count=1, iface=self.iface)
                 if data and len(data) <= 0:
                     # TODO: Handle timeout
                     print(colors.FAIL + '[!]\tTIMEOUT' + colors.ENDC)
@@ -96,7 +99,7 @@ class Session:
         self.packet[TCP].ack    = data[0][TCP].seq + 1
         self.packet[TCP].flags  = 'F'
 
-        ackreceived = sr1(self.packet, timeout=10)
+        ackreceived = sr1(self.packet, timeout=10, iface=self.iface)
         if self.isAck(ackreceived):
             self.checkAckValue(ackreceived[TCP].ack, self.packet[TCP].seq + 1)
             self.state = 'LAST_ACK'

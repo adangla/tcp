@@ -21,19 +21,36 @@ class Server:
         self.state = 'LISTEN'
         pprint.state(self.state)
 
-        filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
-        for iface in netifaces.interfaces():
-            pprint.information('sniffing on ' + iface)
-            self.sniffers.append(AsyncSniffer(filter=filter_options, prn=self.newSession(iface), count=1, iface=iface, timeout=10))
+        try :
+            filter_options = 'tcp and dst port ' + str(self.port) + ' and tcp[tcpflags] & (tcp-syn|tcp-ack) == tcp-syn'
+            for iface in netifaces.interfaces():
+                sniffer = AsyncSniffer(filter=filter_options, prn=self.newSession(iface), count=1, iface=iface)
+                sniffer.start()
+                self.sniffers.append(sniffer)
+                pprint.information('sniffing on ' + iface)
 
-        for sniffer in self.sniffers:
-            sniffer.start()
-        time.sleep(2000)
+            while len(self.sessions) <= 0:
+                time.sleep(1)
+
+            while True:
+                for session in self.sessions:
+                    if session.getState() == 'ESTABLISHED':
+                        session_iface = session.getInterface()
+                        sniffer = AsyncSniffer(filter=filter_options, prn=self.newSession(session_iface), count=1, iface=session_iface)
+                        sniffer.start()
+                        pprint.information('sniffing on ' + session_iface)
+                        self.sniffers.append(sniffer)
+                        self.sessions.remove(session)
+
+        except KeyboardInterrupt:
+            for sniffer in self.sniffers:
+                sniffer.stop()
 
     def newSession(self, iface):
         def addSession(request):
             new_s = Session(iface=iface, request=request)
-            new_s.connection(request)
             self.sessions.append(new_s)
+            pprint.information('Openning session with ' + request[IP].src)
+            new_s.connection(request)
         return addSession
 
