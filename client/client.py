@@ -53,7 +53,7 @@ class Client:
                 self.packet[TCP].flags    = 'PA'
 
                 ack = sr1(self.packet/Raw(message), timeout=10)
-                if len(ack) <= 0:
+                if ack is None:
                     # TODO: Handle error
                      pprint.error('Did not received ack for data')
                 elif self.checkAck(ack, message):
