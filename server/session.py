@@ -1,4 +1,5 @@
 import random
+import time
 from scapy.all import *
 
 from shared import constant, colors, pprint
@@ -62,6 +63,7 @@ class Session:
                     break
                 if self.isFin(data):
                     self.sendACK(data[0], data[0][TCP].seq + 1)
+                    time.sleep(1)
                     self.deconnection(data)
                     break
                 elif self.containsMessage(data):
