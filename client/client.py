@@ -10,7 +10,7 @@ class Client:
         pprint.state(self.state)
         os.system('iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP')
         self.packet             = IP()/TCP()
-        self.packet[TCP].sport  = 2222
+        self.packet[TCP].sport  = random.randint(1025, 65000)
         self.packet[TCP].seq    = random.randint(1, 2048) # TODO: Check RFC
 
     def connection(self, host, port, iface):
@@ -53,7 +53,7 @@ class Client:
                 self.packet[TCP].flags    = 'PA'
 
                 ack = sr1(self.packet/Raw(message), timeout=10)
-                if len(ack) <= 0:
+                if ack is None:
                     # TODO: Handle error
                      pprint.error('Did not received ack for data')
                 elif self.checkAck(ack, message):
@@ -77,16 +77,22 @@ class Client:
 
     def deconnection(self):
         self.packet[TCP].flags  = 'F'
-        fin = send(self.packet)
         self.state = 'FIN_WAIT_1'
         pprint.state(self.state)
-        self.state = 'FIN_WAIT_2'
-        pprint.state(self.state)
-        data = sniff(count=2, timeout=10)
-        self.packet[TCP].seq    = data[1][TCP].ack
-        self.packet[TCP].ack    = data[1][TCP].seq + 1
+        
+        fin_ack = sr1(self.packet)
+
+        if fin_ack[TCP].flags == constant.ACK:
+            filter_opt = 'tcp and dst port ' + str(self.packet[TCP].sport)
+            data = sniff(filter=filter_opt, count=1, timeout=10)
+            self.packet[TCP].seq    = data[0][TCP].ack
+            self.packet[TCP].ack    = data[0][TCP].seq + 1
+        elif fin_ack[TCP].flags == constant.FIN:
+            self.packet[TCP].seq    = fin_ack[TCP].ack
+            self.packet[TCP].ack    = fin_ack[TCP].seq + 1
+        
         self.packet[TCP].flags  = 'A'
-        time.sleep(2)
         send(self.packet)
+        self.state = 'FIN_WAIT_2'
         pprint.state(self.state)
         self.state = 'TIME_WAIT'
